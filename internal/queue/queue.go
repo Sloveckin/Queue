@@ -1,0 +1,51 @@
+package queue
+
+import (
+	"container/list"
+	"errors"
+)
+
+var (
+	NameAlreadyExists = errors.New("Name already exists")
+	IsEmpty           = errors.New("Queue is empty")
+)
+
+type Queue struct {
+	Name     string
+	Password string
+	Names    map[string]bool
+	// TODO: write own list
+	List list.List
+}
+
+func New(name, password *string) *Queue {
+	return &Queue{
+		Name:     *name,
+		Password: *password,
+		Names:    make(map[string]bool),
+		List:     list.List{},
+	}
+}
+
+func (q *Queue) Add(name *string) error {
+	if _, ok := q.Names[*name]; ok {
+		return NameAlreadyExists
+	}
+
+	q.Names[*name] = true
+	q.List.PushBack(*name)
+
+	return nil
+}
+
+func (q *Queue) Next() error {
+	front := q.List.Front()
+	if front == nil {
+		return IsEmpty
+	}
+
+	delete(q.Names, front.Value.(string))
+	q.List.Remove(front)
+
+	return nil
+}
