@@ -24,9 +24,9 @@ type addService interface {
 	AddUser(uuid uuid.UUID, name *string) error
 }
 
-func Add(service addService, logger *slog.Logger) http.HandlerFunc {
+func Join(service addService, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "Handler queue.Add"
+		const op = "Handler queue.Join"
 
 		var req addRequest
 		err := render.DecodeJSON(r.Body, &req)

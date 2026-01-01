@@ -24,12 +24,31 @@ func main() {
 	service := queue.New(repository, logger)
 
 	r := chi.NewRouter()
+
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+			// для preflight-запросов
+			if r.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	})
+
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Recoverer)
 
 	r.Post("/create", handlers.Create(service, logger))
-	r.Put("/add", handlers.Add(service, logger))
+	r.Put("/join", handlers.Join(service, logger))
 	r.Put("/next", handlers.NextUser(service, logger))
+	r.Get("/queues/{uuid}/ws", handlers.HandleRoom(service, logger))
 
 	server := &http.Server{
 		Addr:        cnf.HttpServer.Address,

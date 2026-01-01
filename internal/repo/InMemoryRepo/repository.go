@@ -35,6 +35,8 @@ func (r *RepositoryImpl) CreateQueue(name, password *string) (uuid.UUID, error) 
 
 	u := uuid.New()
 
+	r.logger.Info("U: " + u.String())
+
 	r.data[u] = queue.New(name, password)
 
 	r.logger.Info(fmt.Sprintf("%s: UUID=%s", op, u.String()))
