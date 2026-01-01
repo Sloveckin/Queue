@@ -50,6 +50,28 @@ func (s *ServiceQueueImpl) CreateQueue(name, password *string) (uuid.UUID, error
 	return u, nil
 }
 
+func (s *ServiceQueueImpl) GetQueue(id uuid.UUID) (*queue.Queue, error) {
+	const op = "QueueService.GetQueue"
+	q, err := s.repo.GetQueue(id)
+	if err != nil {
+		s.logger.Error(fmt.Sprintf("%s: error while getting queue. Error %s", op, id.String()))
+	}
+
+	return q, nil
+}
+
+func (s *ServiceQueueImpl) CheckExist(id uuid.UUID) (bool, error) {
+	const op = "QueueService.CheckExist"
+
+	_, err := s.repo.GetQueue(id)
+	if err != nil {
+		s.logger.Error(fmt.Sprintf("%s: error while getting queue. Error %s", op, id.String()))
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func (s *ServiceQueueImpl) AddUser(uuid uuid.UUID, name *string) error {
 	const op = "QueueService.Add"
 	q, err := s.repo.GetQueue(uuid)

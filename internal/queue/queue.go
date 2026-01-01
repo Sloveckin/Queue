@@ -6,8 +6,8 @@ import (
 )
 
 var (
-	NameAlreadyExists = errors.New("Name already exists")
-	IsEmpty           = errors.New("Queue is empty")
+	NameAlreadyExists = errors.New("name already exists")
+	IsEmpty           = errors.New("queue is empty")
 )
 
 type Queue struct {
