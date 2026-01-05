@@ -1,7 +1,8 @@
 package queue
 
 import (
-	"CRUDQueue/internal/queue"
+	"CRUDQueue/internal/hub"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -21,16 +22,11 @@ var (
 	}
 )
 
-type roomResponse struct {
-	Names []string `json:"names"`
+type hubService interface {
+	GetHub(uuid uuid.UUID) (*hub.Hub, error)
 }
 
-type queueService interface {
-	GetQueue(uuid uuid.UUID) (*queue.Queue, error)
-	CheckExist(uuid uuid.UUID) (bool, error)
-}
-
-func HandleRoom(service queueService, logger *slog.Logger) http.HandlerFunc {
+func HandleRoom(service hubService, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.HandleRoom"
 		logger.Info("New connection into the room")
@@ -41,8 +37,6 @@ func HandleRoom(service queueService, logger *slog.Logger) http.HandlerFunc {
 			return
 		}
 
-		defer conn.Close()
-
 		id := chi.URLParam(r, "uuid")
 		logger.Info(fmt.Sprintf("%s. Get uuid=%s", op, id))
 
@@ -52,30 +46,38 @@ func HandleRoom(service queueService, logger *slog.Logger) http.HandlerFunc {
 			return
 		}
 
-		exists, err := service.CheckExist(u)
-		if err != nil {
-			logger.Info("Error checking existence: " + err.Error())
-			return
-		}
-
-		if !exists {
-			logger.Info("Room does not exist")
-			return
-		}
-
-		q, err := service.GetQueue(u)
+		h, err := service.GetHub(u)
 		if err != nil {
 			logger.Info("Error getting queue: " + err.Error())
 		}
 
-		var response roomResponse
+		h.Register <- conn
 
-		curNode := q.List.Front()
-		for i := 0; i < q.List.Len(); i++ {
-			response.Names = append(response.Names, curNode.Value.(string))
-			curNode = curNode.Next()
+		names := []string{}
+		for e := h.Queue.List.Front(); e != nil; e = e.Next() {
+			names = append(names, e.Value.(string))
 		}
 
-		conn.WriteJSON(response)
+		state, _ := json.Marshal(names)
+
+		h.Broadcast <- state
+
+		if err != nil {
+			logger.Warn("Failed to write to websocket connection: " + err.Error())
+			return
+		}
+
+		go func() {
+			defer func() {
+				h.Unregister <- conn
+			}()
+
+			for {
+				if _, _, err := conn.ReadMessage(); err != nil {
+					break
+				}
+			}
+		}()
+
 	}
 }
