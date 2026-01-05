@@ -11,19 +11,15 @@ var (
 )
 
 type Queue struct {
-	Name     string
-	Password string
-	Names    map[string]bool
+	Names map[string]bool
 	// TODO: write own list
 	List list.List
 }
 
-func New(name, password *string) *Queue {
+func New() *Queue {
 	return &Queue{
-		Name:     *name,
-		Password: *password,
-		Names:    make(map[string]bool),
-		List:     list.List{},
+		Names: make(map[string]bool),
+		List:  list.List{},
 	}
 }
 

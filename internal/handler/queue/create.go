@@ -23,7 +23,7 @@ type createResponse struct {
 }
 
 type createService interface {
-	CreateQueue(name, password *string) (uuid.UUID, error)
+	Create(name, password string) (uuid.UUID, error)
 }
 
 func Create(service createService, logger *slog.Logger) http.HandlerFunc {
@@ -60,7 +60,7 @@ func Create(service createService, logger *slog.Logger) http.HandlerFunc {
 		req.Name = strings.TrimSpace(req.Name)
 		req.Password = strings.TrimSpace(req.Password)
 
-		u, err := service.CreateQueue(&req.Name, &req.Password)
+		h, err := service.Create(req.Name, req.Password)
 		if err != nil {
 			// Мне кажется, что тут должен быть другой статус код
 			w.WriteHeader(http.StatusInternalServerError)
@@ -74,7 +74,7 @@ func Create(service createService, logger *slog.Logger) http.HandlerFunc {
 		w.WriteHeader(http.StatusCreated)
 		render.JSON(w, r, createResponse{
 			Status: "OK",
-			Uuid:   &u,
+			Uuid:   &h,
 		})
 	}
 }

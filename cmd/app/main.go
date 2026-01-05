@@ -3,13 +3,12 @@ package main
 import (
 	"CRUDQueue/internal/config"
 	handlers "CRUDQueue/internal/handler/queue"
-	"CRUDQueue/internal/repo/InMemoryRepo"
-	"CRUDQueue/internal/service/queue"
+	HubInMemoryRepo "CRUDQueue/internal/repo/hub/InMemoryRepo"
+	ServiceHub "CRUDQueue/internal/service/hub"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
-	"sync"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -19,9 +18,8 @@ func main() {
 	cnf := config.MustLoad()
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	var mutex sync.RWMutex
-	repository := InMemoryRepo.New(&mutex, logger)
-	service := queue.New(repository, logger)
+	hubRepository := HubInMemoryRepo.New(logger)
+	hubService := ServiceHub.New(hubRepository, logger)
 
 	r := chi.NewRouter()
 
@@ -45,10 +43,9 @@ func main() {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Recoverer)
 
-	r.Post("/create", handlers.Create(service, logger))
-	r.Put("/join", handlers.Join(service, logger))
-	r.Put("/next", handlers.NextUser(service, logger))
-	r.Get("/queues/{uuid}/ws", handlers.HandleRoom(service, logger))
+	r.Post("/create", handlers.Create(hubService, logger))
+	r.Put("/join", handlers.Join(hubService, logger))
+	r.Get("/queues/{uuid}/ws", handlers.HandleRoom(hubService, logger))
 
 	server := &http.Server{
 		Addr:        cnf.HttpServer.Address,
