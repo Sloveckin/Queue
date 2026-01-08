@@ -1,7 +1,6 @@
 package queue
 
 import (
-	"CRUDQueue/internal/token"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -20,7 +19,7 @@ type addService interface {
 	AddUser(uuid uuid.UUID, name *string) error
 }
 
-func Join(service addService, jwtMaker *token.JWTMaker, logger *slog.Logger) http.HandlerFunc {
+func Join(service addService, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "Handler queue.Join"
 

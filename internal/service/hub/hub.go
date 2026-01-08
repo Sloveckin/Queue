@@ -31,12 +31,11 @@ func New(repo hubRepository, logger *slog.Logger) *HubServiceImpl {
 func (h *HubServiceImpl) Create(name, password string) (uuid.UUID, error) {
 	const op = "Hubservice.Create"
 
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 10)
+	hashPassword, err := generatePasswordHash(password)
 	if err != nil {
 		h.logger.Info(fmt.Sprintf("%s. Error=%s", op, err.Error()))
 		return uuid.Nil, err
 	}
-	hashPassword := string(bytes)
 
 	q := queue.New()
 
@@ -49,6 +48,15 @@ func (h *HubServiceImpl) Create(name, password string) (uuid.UUID, error) {
 	h.logger.Info(fmt.Sprintf("%s. Create hub with id=%s", op, u))
 
 	return u, err
+}
+
+func generatePasswordHash(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 10)
+	if err != nil {
+		return "", err
+	}
+
+	return string(bytes), nil
 }
 
 func (h *HubServiceImpl) AddUser(uuid uuid.UUID, name *string) error {
