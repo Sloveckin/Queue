@@ -53,7 +53,7 @@ func HandleRoom(service hubService, logger *slog.Logger) http.HandlerFunc {
 
 		h.Register <- conn
 
-		names := []string{}
+		var names []string
 		for e := h.Queue.List.Front(); e != nil; e = e.Next() {
 			names = append(names, e.Value.(string))
 		}

@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"CRUDQueue/internal/token"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -15,16 +16,11 @@ type addRequest struct {
 	Name string    `json:"name" validate:"required,min=2,max=32"`
 }
 
-type addResponse struct {
-	Status string `json:"status" validate:"required"`
-	Error  string `json:"error,omitempty"`
-}
-
 type addService interface {
 	AddUser(uuid uuid.UUID, name *string) error
 }
 
-func Join(service addService, logger *slog.Logger) http.HandlerFunc {
+func Join(service addService, jwtMaker *token.JWTMaker, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "Handler queue.Join"
 
@@ -32,12 +28,8 @@ func Join(service addService, logger *slog.Logger) http.HandlerFunc {
 		err := render.DecodeJSON(r.Body, &req)
 		if err != nil {
 			logger.Info(fmt.Sprintf("%s: Error decoding request: %s", op, err.Error()))
-
 			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, addResponse{
-				Status: "error",
-				Error:  err.Error(),
-			})
+			render.JSON(w, r, Error(err.Error()))
 			return
 		}
 
@@ -47,11 +39,7 @@ func Join(service addService, logger *slog.Logger) http.HandlerFunc {
 		if err != nil {
 			logger.Info(fmt.Sprintf("%s: Error: %s", op, err.Error()))
 			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, createResponse{
-				Status: "Error",
-				Error:  err.Error(),
-			})
-
+			render.JSON(w, r, Error(err.Error()))
 			return
 		}
 
@@ -59,17 +47,10 @@ func Join(service addService, logger *slog.Logger) http.HandlerFunc {
 		if err != nil {
 			logger.Info(fmt.Sprintf("%s: Error adding item: %s", op, err.Error()))
 			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, createResponse{
-				Status: "Error",
-				Error:  err.Error(),
-			})
-
+			render.JSON(w, r, Error(err.Error()))
 			return
 		}
 
-		w.WriteHeader(http.StatusCreated)
-		render.JSON(w, r, addResponse{
-			Status: "OK",
-		})
+		render.JSON(w, r, Ok())
 	}
 }

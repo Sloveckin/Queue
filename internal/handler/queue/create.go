@@ -17,9 +17,8 @@ type createRequest struct {
 }
 
 type createResponse struct {
-	Status string     `json:"status"`
-	Error  string     `json:"error,omitempty"`
-	Uuid   *uuid.UUID `json:"uuid,omitempty"`
+	Response
+	Uuid *uuid.UUID `json:"uuid,omitempty"`
 }
 
 type createService interface {
@@ -36,11 +35,7 @@ func Create(service createService, logger *slog.Logger) http.HandlerFunc {
 			logger.Info(fmt.Sprintf("%s: Error decoding request: %s", op, err.Error()))
 
 			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, createResponse{
-				Status: "error",
-				Error:  err.Error(),
-			})
-
+			render.JSON(w, r, Error(err.Error()))
 			return
 		}
 
@@ -49,11 +44,7 @@ func Create(service createService, logger *slog.Logger) http.HandlerFunc {
 		if err != nil {
 			logger.Info(fmt.Sprintf("%s: Error: %s", op, err.Error()))
 			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, createResponse{
-				Status: "Error",
-				Error:  err.Error(),
-			})
-
+			render.JSON(w, r, Error(err.Error()))
 			return
 		}
 
@@ -62,19 +53,15 @@ func Create(service createService, logger *slog.Logger) http.HandlerFunc {
 
 		h, err := service.Create(req.Name, req.Password)
 		if err != nil {
-			// Мне кажется, что тут должен быть другой статус код
 			w.WriteHeader(http.StatusInternalServerError)
-			render.JSON(w, r, createResponse{
-				Status: "Error",
-				Error:  err.Error(),
-			})
+			render.JSON(w, r, Error(err.Error()))
 			return
 		}
 
 		w.WriteHeader(http.StatusCreated)
 		render.JSON(w, r, createResponse{
-			Status: "OK",
-			Uuid:   &h,
+			Response: Ok(),
+			Uuid:     &h,
 		})
 	}
 }
